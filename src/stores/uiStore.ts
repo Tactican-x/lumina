@@ -24,6 +24,10 @@ interface ToastState {
 }
 
 interface UIState {
+  // Hydration (persist)
+  hasHydrated: boolean;
+  setHasHydrated: (hydrated: boolean) => void;
+
   // Theme
   theme: Theme;
   setTheme: (theme: Theme) => void;
@@ -58,6 +62,17 @@ interface UIState {
   lastActiveDate: string | null;
   setLastActiveDate: (date: string) => void;
 
+  // Insight generation (once/day)
+  lastInsightRunDate: string | null;
+  setLastInsightRunDate: (date: string | null) => void;
+
+  // Notifications / reminders (NEW)
+  enableNotifications: boolean;
+  setEnableNotifications: (enable: boolean) => void;
+
+  dailyReminderTime: string; // "HH:MM"
+  setDailyReminderTime: (time: string) => void;
+
   // Feature flags
   showScientificDetails: boolean;
   setShowScientificDetails: (show: boolean) => void;
@@ -70,6 +85,10 @@ interface UIState {
 export const useUIStore = create<UIState>()(
   persist(
     (set, get) => ({
+      // Hydration
+      hasHydrated: false,
+      setHasHydrated: (hydrated) => set({ hasHydrated: hydrated }),
+
       // Theme
       theme: 'dark',
       setTheme: (theme) => set({ theme }),
@@ -118,13 +137,12 @@ export const useUIStore = create<UIState>()(
           },
         });
 
-        // Auto-hide after duration
         setTimeout(() => {
           get().hideToast();
         }, duration);
       },
       hideToast: () =>
-        set(state => ({
+        set((state) => ({
           toast: {
             ...state.toast,
             isVisible: false,
@@ -155,6 +173,17 @@ export const useUIStore = create<UIState>()(
       lastActiveDate: null,
       setLastActiveDate: (date) => set({ lastActiveDate: date }),
 
+      // Insight generation (once/day)
+      lastInsightRunDate: null,
+      setLastInsightRunDate: (date) => set({ lastInsightRunDate: date }),
+
+      // Notifications / reminders (NEW)
+      enableNotifications: false,
+      setEnableNotifications: (enable) => set({ enableNotifications: enable }),
+
+      dailyReminderTime: '20:00',
+      setDailyReminderTime: (time) => set({ dailyReminderTime: time }),
+
       // Feature flags
       showScientificDetails: true,
       setShowScientificDetails: (show) => set({ showScientificDetails: show }),
@@ -166,12 +195,27 @@ export const useUIStore = create<UIState>()(
     {
       name: 'lumina-ui-storage',
       storage: createJSONStorage(() => AsyncStorage),
+
+      onRehydrateStorage: () => (state, error) => {
+        if (error) console.warn('UI store rehydrate error:', error);
+        state?.setHasHydrated(true);
+      },
+
       partialize: (state) => ({
-        // Only persist these fields
+        // persist only these fields
         theme: state.theme,
         hasCompletedOnboarding: state.hasCompletedOnboarding,
         isFirstLaunch: state.isFirstLaunch,
         lastActiveDate: state.lastActiveDate,
+
+        // insight runner (once/day)
+        lastInsightRunDate: state.lastInsightRunDate,
+
+        // reminders (NEW)
+        enableNotifications: state.enableNotifications,
+        dailyReminderTime: state.dailyReminderTime,
+
+        // preferences
         showScientificDetails: state.showScientificDetails,
         enableHaptics: state.enableHaptics,
         enableSounds: state.enableSounds,

@@ -69,10 +69,7 @@ export function Input({
         />
 
         {secureTextEntry && (
-          <TouchableOpacity
-            style={styles.iconRight}
-            onPress={() => setShowPassword(!showPassword)}
-          >
+          <TouchableOpacity style={styles.iconRight} onPress={() => setShowPassword(!showPassword)}>
             {showPassword ? (
               <EyeOff size={20} color={colors.text.tertiary} />
             ) : (
@@ -81,9 +78,7 @@ export function Input({
           </TouchableOpacity>
         )}
 
-        {rightIcon && !secureTextEntry && (
-          <View style={styles.iconRight}>{rightIcon}</View>
-        )}
+        {rightIcon && !secureTextEntry && <View style={styles.iconRight}>{rightIcon}</View>}
       </View>
 
       {error && <Text style={styles.error}>{error}</Text>}

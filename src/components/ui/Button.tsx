@@ -49,15 +49,15 @@ export function Button({
   style,
   textStyle,
 }: ButtonProps) {
-  const enableHaptics = useUIStore(state => state.enableHaptics);
+  const enableHaptics = useUIStore((state) => state.enableHaptics);
 
   const handlePress = () => {
     if (disabled || loading) return;
-    
+
     if (enableHaptics) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    
+
     onPress();
   };
 
@@ -87,13 +87,9 @@ export function Button({
         />
       ) : (
         <>
-          {icon && iconPosition === 'left' && (
-            <React.Fragment>{icon}</React.Fragment>
-          )}
+          {icon && iconPosition === 'left' ? icon : null}
           <Text style={textStyles}>{title}</Text>
-          {icon && iconPosition === 'right' && (
-            <React.Fragment>{icon}</React.Fragment>
-          )}
+          {icon && iconPosition === 'right' ? icon : null}
         </>
       )}
     </>

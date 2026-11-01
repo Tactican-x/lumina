@@ -17,7 +17,10 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourname.lumina"
+      "bundleIdentifier": "com.yourname.lumina",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -34,10 +37,18 @@
     "plugins": [
       "expo-router",
       "@react-native-community/datetimepicker",
+      "expo-font",
       "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4979837b-59e3-4a50-9e54-eac072c9f620"
+      }
+    },
+    "owner": "eric697"
   }
 }

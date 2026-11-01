@@ -41,3 +41,54 @@ temp/
 
 expo-env.d.ts
 # @end expo-cli
+
+# Additional environment files
+.env.*
+!.env.example
+
+# IDE settings
+.idea/
+.vscode/
+
+# Build outputs
+build/
+
+# Local databases and backups
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.sqlite-journal
+
+# Local financial data and exports
+local-data/
+user-data/
+backups/
+exports/
+
+# Android signing credentials - NEVER publish
+credentials/
+*.jks
+*.keystore
+credentials.json
+
+# Backup files
+*.bak
+*.bak.*
+
+# Local databases and financial records
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+local-data/
+user-data/
+backups/
+exports/
+
+# IDE settings
+.idea/
+.vscode/
+
+# Build outputs
+build/

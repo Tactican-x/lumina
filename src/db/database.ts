@@ -9,7 +9,6 @@ export const db = drizzle(expoDb, { schema });
 
 export async function initializeDatabase() {
   try {
-    // execAsync exists on the Database object
     await expoDb.execAsync(`
       CREATE TABLE IF NOT EXISTS users (
         id TEXT PRIMARY KEY,
@@ -162,6 +161,42 @@ export async function initializeDatabase() {
         updated_at INTEGER DEFAULT (unixepoch())
       );
 
+      -- =========================
+      -- MONEY TABLES (NEW)
+      -- =========================
+      CREATE TABLE IF NOT EXISTS money_categories (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        emoji TEXT NOT NULL DEFAULT '',
+        color TEXT NOT NULL DEFAULT '#64748b',
+        kind TEXT NOT NULL DEFAULT 'expense',
+        is_system INTEGER NOT NULL DEFAULT 0,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER DEFAULT (unixepoch()),
+        updated_at INTEGER DEFAULT (unixepoch())
+      );
+
+      CREATE TABLE IF NOT EXISTS money_transactions (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        amount_cents INTEGER NOT NULL,
+        category_id TEXT NOT NULL REFERENCES money_categories(id) ON DELETE RESTRICT,
+        note TEXT,
+        occurred_at INTEGER NOT NULL,
+        month_key TEXT NOT NULL,
+        created_at INTEGER DEFAULT (unixepoch()),
+        updated_at INTEGER DEFAULT (unixepoch())
+      );
+
+      CREATE TABLE IF NOT EXISTS money_budgets (
+        id TEXT PRIMARY KEY,
+        month_key TEXT NOT NULL UNIQUE,
+        expense_budget_cents INTEGER NOT NULL DEFAULT 0,
+        savings_goal_cents INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER DEFAULT (unixepoch()),
+        updated_at INTEGER DEFAULT (unixepoch())
+      );
+
       CREATE INDEX IF NOT EXISTS idx_habit_completions_habit_id ON habit_completions(habit_id);
       CREATE INDEX IF NOT EXISTS idx_habit_completions_date ON habit_completions(date);
       CREATE INDEX IF NOT EXISTS idx_goal_progress_goal_id ON goal_progress(goal_id);
@@ -169,6 +204,12 @@ export async function initializeDatabase() {
       CREATE INDEX IF NOT EXISTS idx_energy_logs_timestamp ON energy_logs(timestamp);
       CREATE INDEX IF NOT EXISTS idx_insights_type ON insights(type);
       CREATE INDEX IF NOT EXISTS idx_insights_created_at ON insights(created_at);
+
+      -- Money indexes
+      CREATE INDEX IF NOT EXISTS idx_money_transactions_month_key ON money_transactions(month_key);
+      CREATE INDEX IF NOT EXISTS idx_money_transactions_occurred_at ON money_transactions(occurred_at);
+      CREATE INDEX IF NOT EXISTS idx_money_transactions_category_id ON money_transactions(category_id);
+      CREATE INDEX IF NOT EXISTS idx_money_categories_kind ON money_categories(kind);
     `);
 
     console.log('✅ Database initialized');

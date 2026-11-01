@@ -1,6 +1,7 @@
 /**
  * HabitList Component
  * Displays a list of habits with sections
+ * Supports swipe-left delete via onHabitDelete
  */
 
 import React from 'react';
@@ -19,6 +20,10 @@ interface HabitListProps {
   habits: HabitWithStats[];
   onHabitPress?: (habit: HabitWithStats) => void;
   onHabitComplete?: (habit: HabitWithStats) => void;
+
+  /** If provided, enables swipe-to-delete on each row */
+  onHabitDelete?: (habit: HabitWithStats) => void;
+
   isLoading?: boolean;
   onRefresh?: () => void;
   showStats?: boolean;
@@ -31,6 +36,7 @@ export function HabitList({
   habits,
   onHabitPress,
   onHabitComplete,
+  onHabitDelete,
   isLoading = false,
   onRefresh,
   showStats = true,
@@ -43,6 +49,7 @@ export function HabitList({
       habit={item}
       onPress={() => onHabitPress?.(item)}
       onComplete={() => onHabitComplete?.(item)}
+      onDelete={onHabitDelete ? () => onHabitDelete(item) : undefined}
       showStats={showStats}
       compact={compact}
     />
@@ -57,10 +64,7 @@ export function HabitList({
 
   const renderHeader = () => {
     if (!sectionTitle) return null;
-
-    return (
-      <Text style={styles.sectionTitle}>{sectionTitle}</Text>
-    );
+    return <Text style={styles.sectionTitle}>{sectionTitle}</Text>;
   };
 
   return (
@@ -97,6 +101,9 @@ interface GroupedHabitListProps extends Omit<HabitListProps, 'habits'> {
 export function GroupedHabitList({
   pendingHabits,
   completedHabits,
+  onHabitPress,
+  onHabitComplete,
+  onHabitDelete,
   ...props
 }: GroupedHabitListProps) {
   return (
@@ -110,8 +117,9 @@ export function GroupedHabitList({
             <HabitCard
               key={habit.id}
               habit={habit}
-              onPress={() => props.onHabitPress?.(habit)}
-              onComplete={() => props.onHabitComplete?.(habit)}
+              onPress={() => onHabitPress?.(habit)}
+              onComplete={() => onHabitComplete?.(habit)}
+              onDelete={onHabitDelete ? () => onHabitDelete(habit) : undefined}
               showStats={props.showStats}
               compact={props.compact}
             />
@@ -128,8 +136,9 @@ export function GroupedHabitList({
             <HabitCard
               key={habit.id}
               habit={habit}
-              onPress={() => props.onHabitPress?.(habit)}
-              onComplete={() => props.onHabitComplete?.(habit)}
+              onPress={() => onHabitPress?.(habit)}
+              onComplete={() => onHabitComplete?.(habit)}
+              onDelete={onHabitDelete ? () => onHabitDelete(habit) : undefined}
               showStats={props.showStats}
               compact={props.compact}
             />

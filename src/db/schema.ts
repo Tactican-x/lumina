@@ -1,10 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { 
-  sqliteTable, 
-  text, 
-  integer, 
-  real 
-} from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
 
 // ==========================================
 // USERS TABLE
@@ -16,10 +11,8 @@ export const users = sqliteTable('users', {
   timezone: text('timezone').default('UTC'),
   onboardingCompleted: integer('onboarding_completed', { mode: 'boolean' }).default(false),
   settings: text('settings', { mode: 'json' }).$type<UserSettings>(),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .default(sql`(unixepoch())`),
-  updatedAt: integer('updated_at', { mode: 'timestamp' })
-    .default(sql`(unixepoch())`),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
 });
 
 export interface UserSettings {
@@ -28,6 +21,10 @@ export interface UserSettings {
   reminderTime: string;
   weekStartsOn: 0 | 1; // 0 = Sunday, 1 = Monday
   showScientificDetails: boolean;
+
+  // PROFILE (NEW)
+  nickname?: string | null;
+  avatarUri?: string | null;
 }
 
 // ==========================================
@@ -39,23 +36,27 @@ export const habits = sqliteTable('habits', {
   description: text('description'),
   icon: text('icon').notNull().default('circle'),
   color: text('color').notNull().default('#3b82f6'),
-  frequency: text('frequency', { 
-    enum: ['daily', 'weekly', 'custom'] 
-  }).notNull().default('daily'),
+  frequency: text('frequency', {
+    enum: ['daily', 'weekly', 'custom'],
+  })
+    .notNull()
+    .default('daily'),
   targetDays: text('target_days', { mode: 'json' }).$type<number[]>(),
-  timeOfDay: text('time_of_day', { 
-    enum: ['morning', 'afternoon', 'evening', 'anytime'] 
-  }).notNull().default('anytime'),
-  energyRequired: text('energy_required', { 
-    enum: ['low', 'medium', 'high'] 
-  }).notNull().default('medium'),
+  timeOfDay: text('time_of_day', {
+    enum: ['morning', 'afternoon', 'evening', 'anytime'],
+  })
+    .notNull()
+    .default('anytime'),
+  energyRequired: text('energy_required', {
+    enum: ['low', 'medium', 'high'],
+  })
+    .notNull()
+    .default('medium'),
   reminderTime: text('reminder_time'),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   order: integer('order').notNull().default(0),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .default(sql`(unixepoch())`),
-  updatedAt: integer('updated_at', { mode: 'timestamp' })
-    .default(sql`(unixepoch())`),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
 });
 
 // ==========================================
@@ -63,16 +64,16 @@ export const habits = sqliteTable('habits', {
 // ==========================================
 export const habitCompletions = sqliteTable('habit_completions', {
   id: text('id').primaryKey(),
-  habitId: text('habit_id').notNull().references(() => habits.id, { 
-    onDelete: 'cascade' 
-  }),
+  habitId: text('habit_id')
+    .notNull()
+    .references(() => habits.id, { onDelete: 'cascade' }),
   completedAt: integer('completed_at', { mode: 'timestamp' }).notNull(),
-  date: text('date').notNull(), // YYYY-MM-DD for easy grouping
-  duration: integer('duration'), // minutes
+  date: text('date').notNull(), // YYYY-MM-DD
+  duration: integer('duration'),
   note: text('note'),
-  mood: integer('mood'), // 1-5
-  energyBefore: integer('energy_before'), // 1-10
-  energyAfter: integer('energy_after'), // 1-10
+  mood: integer('mood'),
+  energyBefore: integer('energy_before'),
+  energyAfter: integer('energy_after'),
 });
 
 // ==========================================
@@ -83,8 +84,10 @@ export const goals = sqliteTable('goals', {
   title: text('title').notNull(),
   description: text('description'),
   category: text('category', {
-    enum: ['health', 'career', 'finance', 'relationships', 'learning', 'creativity', 'other']
-  }).notNull().default('other'),
+    enum: ['health', 'career', 'finance', 'relationships', 'learning', 'creativity', 'other'],
+  })
+    .notNull()
+    .default('other'),
   icon: text('icon').notNull().default('target'),
   color: text('color').notNull().default('#3b82f6'),
   targetDate: integer('target_date', { mode: 'timestamp' }),
@@ -92,12 +95,12 @@ export const goals = sqliteTable('goals', {
   currentValue: real('current_value').notNull().default(0),
   unit: text('unit'),
   status: text('status', {
-    enum: ['active', 'completed', 'paused', 'abandoned']
-  }).notNull().default('active'),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .default(sql`(unixepoch())`),
-  updatedAt: integer('updated_at', { mode: 'timestamp' })
-    .default(sql`(unixepoch())`),
+    enum: ['active', 'completed', 'paused', 'abandoned'],
+  })
+    .notNull()
+    .default('active'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
 });
 
 // ==========================================
@@ -105,9 +108,9 @@ export const goals = sqliteTable('goals', {
 // ==========================================
 export const milestones = sqliteTable('milestones', {
   id: text('id').primaryKey(),
-  goalId: text('goal_id').notNull().references(() => goals.id, { 
-    onDelete: 'cascade' 
-  }),
+  goalId: text('goal_id')
+    .notNull()
+    .references(() => goals.id, { onDelete: 'cascade' }),
   title: text('title').notNull(),
   description: text('description'),
   targetValue: real('target_value').notNull(),
@@ -122,14 +125,13 @@ export const milestones = sqliteTable('milestones', {
 // ==========================================
 export const goalProgress = sqliteTable('goal_progress', {
   id: text('id').primaryKey(),
-  goalId: text('goal_id').notNull().references(() => goals.id, { 
-    onDelete: 'cascade' 
-  }),
+  goalId: text('goal_id')
+    .notNull()
+    .references(() => goals.id, { onDelete: 'cascade' }),
   date: text('date').notNull(), // YYYY-MM-DD
   value: real('value').notNull(),
   note: text('note'),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .default(sql`(unixepoch())`),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
 });
 
 // ==========================================
@@ -140,17 +142,25 @@ export const tasks = sqliteTable('tasks', {
   title: text('title').notNull(),
   description: text('description'),
   priority: text('priority', {
-    enum: ['low', 'medium', 'high', 'urgent']
-  }).notNull().default('medium'),
+    enum: ['low', 'medium', 'high', 'urgent'],
+  })
+    .notNull()
+    .default('medium'),
   status: text('status', {
-    enum: ['pending', 'in_progress', 'completed', 'cancelled']
-  }).notNull().default('pending'),
+    enum: ['pending', 'in_progress', 'completed', 'cancelled'],
+  })
+    .notNull()
+    .default('pending'),
   type: text('type', {
-    enum: ['creative', 'analytical', 'administrative', 'communication', 'physical', 'other']
-  }).notNull().default('other'),
+    enum: ['creative', 'analytical', 'administrative', 'communication', 'physical', 'other'],
+  })
+    .notNull()
+    .default('other'),
   energyRequired: text('energy_required', {
-    enum: ['low', 'medium', 'high']
-  }).notNull().default('medium'),
+    enum: ['low', 'medium', 'high'],
+  })
+    .notNull()
+    .default('medium'),
   estimatedMinutes: integer('estimated_minutes'),
   actualMinutes: integer('actual_minutes'),
   dueDate: integer('due_date', { mode: 'timestamp' }),
@@ -158,10 +168,8 @@ export const tasks = sqliteTable('tasks', {
   completedAt: integer('completed_at', { mode: 'timestamp' }),
   goalId: text('goal_id').references(() => goals.id, { onDelete: 'set null' }),
   tags: text('tags', { mode: 'json' }).$type<string[]>().default([]),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .default(sql`(unixepoch())`),
-  updatedAt: integer('updated_at', { mode: 'timestamp' })
-    .default(sql`(unixepoch())`),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
 });
 
 // ==========================================
@@ -172,7 +180,7 @@ export const energyLogs = sqliteTable('energy_logs', {
   timestamp: integer('timestamp', { mode: 'timestamp' }).notNull(),
   score: integer('score').notNull(), // 0-100
   phase: text('phase', {
-    enum: ['peak_cognitive', 'creative_flow', 'analytical', 'recovery', 'social', 'rest']
+    enum: ['peak_cognitive', 'creative_flow', 'analytical', 'recovery', 'social', 'rest'],
   }).notNull(),
   factors: text('factors', { mode: 'json' }).$type<EnergyFactors>(),
   note: text('note'),
@@ -192,53 +200,53 @@ export interface EnergyFactors {
 export const insights = sqliteTable('insights', {
   id: text('id').primaryKey(),
   type: text('type', {
-    enum: ['correlation', 'pattern', 'prediction', 'warning', 'optimization', 'achievement']
+    enum: ['correlation', 'pattern', 'prediction', 'warning', 'optimization', 'achievement'],
   }).notNull(),
   priority: text('priority', {
-    enum: ['low', 'medium', 'high', 'critical']
-  }).notNull().default('medium'),
+    enum: ['low', 'medium', 'high', 'critical'],
+  })
+    .notNull()
+    .default('medium'),
   title: text('title').notNull(),
   summary: text('summary').notNull(),
   detailedAnalysis: text('detailed_analysis').notNull(),
   scientificExplanation: text('scientific_explanation'),
-  
+
   // Metrics
   confidence: real('confidence').notNull(), // 0-100
   correlationValue: real('correlation_value'), // -1 to 1
   pValue: real('p_value'),
   effectSize: real('effect_size'),
-  
+
   // Action
   actionLabel: text('action_label'),
   actionType: text('action_type', {
-    enum: ['habit', 'goal', 'task', 'setting', 'external']
+    enum: ['habit', 'goal', 'task', 'setting', 'external'],
   }),
   actionPayload: text('action_payload', { mode: 'json' }),
-  
+
   // Related entities
   relatedHabitIds: text('related_habit_ids', { mode: 'json' }).$type<string[]>(),
   relatedGoalIds: text('related_goal_ids', { mode: 'json' }).$type<string[]>(),
-  
+
   // Status
   isRead: integer('is_read', { mode: 'boolean' }).notNull().default(false),
   isDismissed: integer('is_dismissed', { mode: 'boolean' }).notNull().default(false),
   expiresAt: integer('expires_at', { mode: 'timestamp' }),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .default(sql`(unixepoch())`),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
 });
 
 // ==========================================
-// PATTERNS TABLE (Cached pattern analysis)
+// PATTERNS TABLE
 // ==========================================
 export const patterns = sqliteTable('patterns', {
   id: text('id').primaryKey(),
-  type: text('type').notNull(), // e.g., 'peak_performance_time', 'habit_chain'
+  type: text('type').notNull(),
   name: text('name').notNull(),
   strength: real('strength').notNull(), // 0-100
   data: text('data', { mode: 'json' }).notNull(),
   validUntil: integer('valid_until', { mode: 'timestamp' }).notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .default(sql`(unixepoch())`),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
 });
 
 // ==========================================
@@ -250,15 +258,57 @@ export const notes = sqliteTable('notes', {
   content: text('content').notNull(),
   tags: text('tags', { mode: 'json' }).$type<string[]>().default([]),
   lifeArea: text('life_area', {
-    enum: ['health', 'career', 'finance', 'relationships', 'learning', 'creativity', 'personal', 'other']
+    enum: ['health', 'career', 'finance', 'relationships', 'learning', 'creativity', 'personal', 'other'],
   }),
   linkedHabitIds: text('linked_habit_ids', { mode: 'json' }).$type<string[]>(),
   linkedGoalIds: text('linked_goal_ids', { mode: 'json' }).$type<string[]>(),
   isPinned: integer('is_pinned', { mode: 'boolean' }).notNull().default(false),
-  createdAt: integer('created_at', { mode: 'timestamp' })
-    .default(sql`(unixepoch())`),
-  updatedAt: integer('updated_at', { mode: 'timestamp' })
-    .default(sql`(unixepoch())`),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
+});
+
+// ==========================================
+// MONEY: CATEGORIES
+// ==========================================
+export const moneyCategories = sqliteTable('money_categories', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  emoji: text('emoji').notNull().default(''),
+  color: text('color').notNull().default('#64748b'),
+  kind: text('kind', { enum: ['expense', 'income', 'both'] }).notNull().default('expense'),
+  isSystem: integer('is_system', { mode: 'boolean' }).notNull().default(false),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
+});
+
+// ==========================================
+// MONEY: TRANSACTIONS
+// ==========================================
+export const moneyTransactions = sqliteTable('money_transactions', {
+  id: text('id').primaryKey(),
+  type: text('type', { enum: ['income', 'expense'] }).notNull(),
+  amountCents: integer('amount_cents').notNull(),
+  categoryId: text('category_id')
+    .notNull()
+    .references(() => moneyCategories.id, { onDelete: 'restrict' }),
+  note: text('note'),
+  occurredAt: integer('occurred_at', { mode: 'timestamp' }).notNull(),
+  monthKey: text('month_key').notNull(), // YYYY-MM
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
+});
+
+// ==========================================
+// MONEY: BUDGETS (monthly)
+// ==========================================
+export const moneyBudgets = sqliteTable('money_budgets', {
+  id: text('id').primaryKey(),
+  monthKey: text('month_key').notNull().unique(), // YYYY-MM
+  expenseBudgetCents: integer('expense_budget_cents').notNull().default(0),
+  savingsGoalCents: integer('savings_goal_cents').notNull().default(0),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).default(sql`(unixepoch())`),
 });
 
 // ==========================================
@@ -296,3 +346,13 @@ export type NewPattern = typeof patterns.$inferInsert;
 
 export type Note = typeof notes.$inferSelect;
 export type NewNote = typeof notes.$inferInsert;
+
+// Money
+export type MoneyCategory = typeof moneyCategories.$inferSelect;
+export type NewMoneyCategory = typeof moneyCategories.$inferInsert;
+
+export type MoneyTransaction = typeof moneyTransactions.$inferSelect;
+export type NewMoneyTransaction = typeof moneyTransactions.$inferInsert;
+
+export type MoneyBudget = typeof moneyBudgets.$inferSelect;
+export type NewMoneyBudget = typeof moneyBudgets.$inferInsert;

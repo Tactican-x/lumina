@@ -1,6 +1,7 @@
 /**
  * TodayHabits Component
  * Quick view of today's habits with completion
+ * Default behavior: show ALL habits (no 5-item limit)
  */
 
 import React from 'react';
@@ -16,8 +17,17 @@ interface TodayHabitsProps {
   habits: HabitWithStats[];
   onHabitComplete: (habit: HabitWithStats) => void;
   onHabitPress: (habit: HabitWithStats) => void;
+
+  /** Optional: enables swipe-left delete on each habit row */
+  onHabitDelete?: (habit: HabitWithStats) => void;
+
   onViewAll: () => void;
   onAddHabit: () => void;
+
+  /**
+   * Optional limit.
+   * If not provided, it shows all habits.
+   */
   maxDisplay?: number;
 }
 
@@ -25,16 +35,19 @@ export function TodayHabits({
   habits,
   onHabitComplete,
   onHabitPress,
+  onHabitDelete,
   onViewAll,
   onAddHabit,
-  maxDisplay = 5,
+
+  // Default: show ALL habits
+  maxDisplay = habits.length,
 }: TodayHabitsProps) {
   const completed = habits.filter((h) => h.completedToday).length;
   const total = habits.length;
   const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   const displayHabits = habits.slice(0, maxDisplay);
-  const remaining = habits.length - maxDisplay;
+  const remaining = Math.max(0, habits.length - maxDisplay);
 
   if (habits.length === 0) {
     return (
@@ -42,9 +55,7 @@ export function TodayHabits({
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyEmoji}>🌱</Text>
           <Text style={styles.emptyTitle}>No habits for today</Text>
-          <Text style={styles.emptySubtitle}>
-            Start building your routine
-          </Text>
+          <Text style={styles.emptySubtitle}>Start building your routine</Text>
           <TouchableOpacity onPress={onAddHabit} style={styles.addButton}>
             <Plus size={16} color={colors.brand.primary} />
             <Text style={styles.addButtonText}>Add Habit</Text>
@@ -85,13 +96,14 @@ export function TodayHabits({
             habit={habit}
             onPress={() => onHabitPress(habit)}
             onComplete={() => onHabitComplete(habit)}
+            onDelete={onHabitDelete ? () => onHabitDelete(habit) : undefined}
             compact
             showStats={false}
           />
         ))}
       </View>
 
-      {/* View all / remaining */}
+      {/* View all / remaining (will only show if you set a maxDisplay smaller than habits.length) */}
       {remaining > 0 && (
         <TouchableOpacity onPress={onViewAll} style={styles.viewAll}>
           <Text style={styles.viewAllText}>
@@ -105,16 +117,14 @@ export function TodayHabits({
       {progress === 100 && (
         <View style={styles.celebration}>
           <CheckCircle2 size={20} color={colors.success.main} />
-          <Text style={styles.celebrationText}>
-            All habits completed! Great job! 🎉
-          </Text>
+          <Text style={styles.celebrationText}>All habits completed! Great job! 🎉</Text>
         </View>
       )}
     </View>
   );
 }
 
-// Compact horizontal scroll version
+// Compact horizontal scroll version (unchanged)
 export function TodayHabitsCompact({
   habits,
   onHabitComplete,
@@ -153,9 +163,7 @@ export function TodayHabitsCompact({
               { borderColor: habit.color },
             ]}
           >
-            <Text style={styles.compactHabitEmoji}>
-              {getHabitEmoji(habit.icon)}
-            </Text>
+            <Text style={styles.compactHabitEmoji}>{getHabitEmoji(habit.icon)}</Text>
             {habit.completedToday && (
               <View style={[styles.compactCheck, { backgroundColor: habit.color }]}>
                 <CheckCircle2 size={10} color="#fff" />

@@ -1,10 +1,18 @@
 /**
  * HabitCard Component
  * Displays a single habit with completion status, streak, and stats
+ * Supports swipe-left-to-delete if onDelete is provided
  */
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import {
@@ -25,6 +33,10 @@ interface HabitCardProps {
   habit: HabitWithStats;
   onPress?: () => void;
   onComplete?: () => void;
+
+  /** If provided, enables swipe-left-to-delete UI */
+  onDelete?: () => void;
+
   showStats?: boolean;
   compact?: boolean;
 }
@@ -33,6 +45,7 @@ export function HabitCard({
   habit,
   onPress,
   onComplete,
+  onDelete,
   showStats = true,
   compact = false,
 }: HabitCardProps) {
@@ -45,58 +58,83 @@ export function HabitCard({
     onComplete?.();
   };
 
+  const confirmDelete = () => {
+    if (!onDelete) return;
+
+    Alert.alert(
+      'Delete habit?',
+      `“${habit.name}” will be deleted along with its completion history.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: onDelete },
+      ]
+    );
+  };
+
+  const renderRightActions = () => {
+    if (!onDelete) return null;
+
+    return (
+      <View style={styles.rightActions}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={confirmDelete}
+          style={styles.deleteAction}
+        >
+          <Text style={styles.deleteText}>Delete</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   const energyColors = {
     low: colors.success.main,
     medium: colors.warning.main,
     high: colors.danger.main,
   };
 
-  if (compact) {
-    return (
-      <TouchableOpacity
-        onPress={onPress}
-        activeOpacity={0.7}
-        style={styles.compactContainer}
+  const content = compact ? (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
+      style={styles.compactContainer}
+    >
+      <View
+        style={[
+          styles.compactIcon,
+          { backgroundColor: `${habit.color}20` },
+        ]}
       >
-        <View
-          style={[
-            styles.compactIcon,
-            { backgroundColor: `${habit.color}20` },
-          ]}
-        >
-          <Text style={styles.compactEmoji}>{getHabitEmoji(habit.icon)}</Text>
-        </View>
+        <Text style={styles.compactEmoji}>{getHabitEmoji(habit.icon)}</Text>
+      </View>
 
-        <View style={styles.compactContent}>
-          <Text style={styles.compactName} numberOfLines={1}>
-            {habit.name}
-          </Text>
-          {habit.streak.currentStreak > 0 && (
-            <View style={styles.compactStreak}>
-              <Flame size={12} color={colors.warning.main} />
-              <Text style={styles.compactStreakText}>
-                {habit.streak.currentStreak}
-              </Text>
-            </View>
-          )}
-        </View>
+      <View style={styles.compactContent}>
+        <Text style={styles.compactName} numberOfLines={1}>
+          {habit.name}
+        </Text>
+        {habit.streak.currentStreak > 0 && (
+          <View style={styles.compactStreak}>
+            <Flame size={12} color={colors.warning.main} />
+            <Text style={styles.compactStreakText}>
+              {habit.streak.currentStreak}
+            </Text>
+          </View>
+        )}
+      </View>
 
-        <TouchableOpacity
-          onPress={handleComplete}
-          style={[
-            styles.compactCheckbox,
-            habit.completedToday && styles.compactCheckboxCompleted,
-            { borderColor: habit.color },
-            habit.completedToday && { backgroundColor: habit.color },
-          ]}
-        >
-          {habit.completedToday && <Check size={16} color="#fff" />}
-        </TouchableOpacity>
+      <TouchableOpacity
+        onPress={handleComplete}
+        style={[
+          styles.compactCheckbox,
+          habit.completedToday && styles.compactCheckboxCompleted,
+          { borderColor: habit.color },
+          habit.completedToday && { backgroundColor: habit.color },
+        ]}
+      >
+        {habit.completedToday && <Check size={16} color="#fff" />}
       </TouchableOpacity>
-    );
-  }
-
-  return (
+    </TouchableOpacity>
+  ) : (
     <Card
       variant="default"
       onPress={onPress}
@@ -118,7 +156,7 @@ export function HabitCard({
             <Text style={styles.name} numberOfLines={1}>
               {habit.name}
             </Text>
-            
+
             <View style={styles.badges}>
               {habit.streak.currentStreak > 0 && (
                 <View style={styles.streakBadge}>
@@ -188,6 +226,19 @@ export function HabitCard({
       )}
     </Card>
   );
+
+  // Only enable swipe if delete is supported
+  if (!onDelete) return content;
+
+  return (
+    <Swipeable
+      renderRightActions={renderRightActions}
+      rightThreshold={40}
+      overshootRight={false}
+    >
+      {content}
+    </Swipeable>
+  );
 }
 
 // Helper function to get emoji from icon name
@@ -218,6 +269,30 @@ const styles = StyleSheet.create({
   card: {
     marginBottom: spacing.sm,
   },
+
+  // Swipe actions
+  rightActions: {
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    marginBottom: spacing.sm, // match card spacing so it looks aligned while swiping
+  },
+  deleteAction: {
+    width: 96,
+    height: '100%',
+    backgroundColor: colors.danger.main,
+    borderRadius: borderRadius.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.sm,
+  },
+  deleteText: {
+    color: '#fff',
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.semibold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+
   header: {
     flexDirection: 'row',
     alignItems: 'center',

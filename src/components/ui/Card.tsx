@@ -4,12 +4,7 @@
  */
 
 import React from 'react';
-import {
-  View,
-  TouchableOpacity,
-  StyleSheet,
-  ViewStyle,
-} from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, borderRadius, spacing, shadows } from '@/constants/theme';
 
@@ -147,26 +142,14 @@ const styles = StyleSheet.create({
   },
 
   // Padding
-  padding_none: {
-    padding: 0,
-  },
-  padding_sm: {
-    padding: spacing.sm,
-  },
-  padding_md: {
-    padding: spacing.md,
-  },
-  padding_lg: {
-    padding: spacing.lg,
-  },
+  padding_none: { padding: 0 },
+  padding_sm: { padding: spacing.sm },
+  padding_md: { padding: spacing.md },
+  padding_lg: { padding: spacing.lg },
 
   // Sub-components
-  header: {
-    marginBottom: spacing.sm,
-  },
-  body: {
-    flex: 1,
-  },
+  header: { marginBottom: spacing.sm },
+  body: { flex: 1 },
   footer: {
     marginTop: spacing.sm,
     flexDirection: 'row',

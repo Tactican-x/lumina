@@ -1,4 +1,4 @@
-/**
+﻿/**
  * InsightCard Component
  * Displays AI-generated insights with expandable details + swipe-to-dismiss
  */
@@ -27,6 +27,7 @@ import {
   Trophy,
   ExternalLink,
   X,
+  Clock,
 } from '@/components/ui/Lucide';
 
 import { Insight, InsightType } from '@/types';
@@ -34,6 +35,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { colors, borderRadius, spacing, typography } from '@/constants/theme';
 import { formatPercentage, formatCorrelation, formatPValue } from '@/utils/format';
+import { formatInsightDate, formatInsightDateShort } from '@/utils/date';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -44,9 +46,16 @@ interface InsightCardProps {
   insight: Insight;
   onPress?: () => void;
   onAction?: () => void;
-  onDismiss?: () => void; // When provided, swipe-to-dismiss is enabled
+  onDismiss?: () => void;
+
+  // Feedback
+  onHelpful?: () => void;
+  onNotHelpful?: () => void;
+  feedbackValue?: 1 | -1 | 0;
+
   expanded?: boolean;
-  showDismiss?: boolean; // Enables swipe action
+  showDismiss?: boolean;
+  showDate?: boolean; // Controls date visibility (default: true)
 }
 
 const insightConfig: Record<
@@ -70,10 +79,15 @@ export function InsightCard({
   onPress,
   onAction,
   onDismiss,
+
+  onHelpful,
+  onNotHelpful,
+  feedbackValue = 0,
+
   expanded: controlledExpanded,
   showDismiss = true,
+  showDate = true,
 }: InsightCardProps) {
-  // Support controlled/uncontrolled expansion safely
   const isControlled = controlledExpanded != null;
   const [uncontrolledExpanded, setUncontrolledExpanded] = useState(controlledExpanded ?? false);
   const isExpanded = (controlledExpanded ?? uncontrolledExpanded) as boolean;
@@ -83,13 +97,15 @@ export function InsightCard({
   const config = insightConfig[insight.type];
   const Icon = config.icon;
 
-  // Pull optional fields into locals (makes JSX narrowing clean)
   const correlationValue = insight.correlationValue;
   const pValue = insight.pValue;
   const confidence = insight.confidence;
 
+  // Format the date for display
+  const dateLabel = insight.createdAt ? formatInsightDate(insight.createdAt) : '';
+
   const toggleExpand = () => {
-    if (isControlled) return; // parent controls expanded state
+    if (isControlled) return;
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setUncontrolledExpanded((v) => !v);
   };
@@ -117,6 +133,8 @@ export function InsightCard({
     );
   };
 
+  const showFeedback = Boolean(onHelpful || onNotHelpful);
+
   const cardContent = (
     <Card variant="default" padding="none" style={styles.card}>
       {/* Header with gradient */}
@@ -133,13 +151,22 @@ export function InsightCard({
             </View>
 
             <View style={styles.headerText}>
-              <Text style={styles.label}>{config.label}</Text>
+              {/* Label row: type label + date */}
+              <View style={styles.labelRow}>
+                <Text style={styles.label}>{config.label}</Text>
+                {showDate && dateLabel !== '' && (
+                  <View style={styles.dateBadge}>
+                    <Clock size={9} color="rgba(255,255,255,0.7)" />
+                    <Text style={styles.dateText}>{dateLabel}</Text>
+                  </View>
+                )}
+              </View>
               <Text style={styles.title} numberOfLines={2}>
                 {insight.title}
               </Text>
             </View>
 
-            {/* Right side controls (confidence + chevron) */}
+            {/* Right side controls */}
             <View style={styles.headerRight}>
               {typeof confidence === 'number' && (
                 <View style={styles.confidenceBadge}>
@@ -189,6 +216,41 @@ export function InsightCard({
           </View>
         )}
 
+        {/* Feedback row */}
+        {showFeedback && (
+          <View style={styles.feedbackRow}>
+            <TouchableOpacity
+              onPress={onHelpful}
+              activeOpacity={0.8}
+              style={[
+                styles.feedbackChip,
+                feedbackValue === 1 && styles.feedbackChipHelpfulActive,
+              ]}
+            >
+              <Text
+                style={[styles.feedbackText, feedbackValue === 1 && styles.feedbackTextActive]}
+              >
+                Helpful
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={onNotHelpful}
+              activeOpacity={0.8}
+              style={[
+                styles.feedbackChip,
+                feedbackValue === -1 && styles.feedbackChipNotHelpfulActive,
+              ]}
+            >
+              <Text
+                style={[styles.feedbackText, feedbackValue === -1 && styles.feedbackTextActive]}
+              >
+                Not helpful
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Expanded content */}
         {isExpanded && (
           <View style={styles.expandedContent}>
@@ -204,7 +266,16 @@ export function InsightCard({
               </View>
             )}
 
-            {/* IMPORTANT: only render if onAction exists (Button requires onPress) */}
+            {/* Generated date in expanded view (full timestamp) */}
+            {showDate && dateLabel !== '' && (
+              <View style={styles.expandedDateRow}>
+                <Clock size={12} color={colors.text.tertiary} />
+                <Text style={styles.expandedDateText}>
+                  Generated {dateLabel}
+                </Text>
+              </View>
+            )}
+
             {insight.actionLabel && onAction && (
               <Button
                 title={insight.actionLabel}
@@ -222,7 +293,12 @@ export function InsightCard({
 
       {/* Unread indicator */}
       {!insight.isRead && (
-        <View style={[styles.unreadDot, { backgroundColor: config.gradient[0] }]} />
+        <>
+          <View style={[styles.unreadDot, { backgroundColor: config.gradient[0] }]} />
+          <View style={[styles.newBadge, { backgroundColor: config.gradient[0] }]}>
+            <Text style={styles.newBadgeText}>NEW</Text>
+          </View>
+        </>
       )}
     </Card>
   );
@@ -243,18 +319,25 @@ export function InsightCard({
   return cardContent;
 }
 
-// Compact insight card for previews (no swipe)
+// ==========================================
+// COMPACT CARD
+// ==========================================
+
 export function InsightCardCompact({
   insight,
   onPress,
+  showDate = true,
 }: {
   insight: Insight;
   onPress?: () => void;
+  showDate?: boolean;
 }) {
   const config = insightConfig[insight.type];
   const Icon = config.icon;
-
   const confidence = insight.confidence;
+
+  // Use short format for compact cards
+  const shortDate = insight.createdAt ? formatInsightDateShort(insight.createdAt) : '';
 
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={styles.compactContainer}>
@@ -263,9 +346,16 @@ export function InsightCardCompact({
       </LinearGradient>
 
       <View style={styles.compactContent}>
-        <Text style={styles.compactTitle} numberOfLines={1}>
-          {insight.title}
-        </Text>
+        <View style={styles.compactTitleRow}>
+          <Text style={styles.compactTitle} numberOfLines={1}>
+            {insight.title}
+          </Text>
+
+          {showDate && shortDate !== '' && (
+            <Text style={styles.compactDate}>{shortDate}</Text>
+          )}
+        </View>
+
         <Text style={styles.compactSummary} numberOfLines={1}>
           {insight.summary}
         </Text>
@@ -284,7 +374,12 @@ export function InsightCardCompact({
   );
 }
 
+// ==========================================
+// STYLES
+// ==========================================
+
 const styles = StyleSheet.create({
+  // Swipe dismiss
   rightActions: {
     justifyContent: 'center',
     alignItems: 'stretch',
@@ -306,10 +401,13 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.semibold,
   },
 
+  // Card
   card: {
     marginBottom: spacing.md,
     overflow: 'hidden',
   },
+
+  // Header
   header: {
     padding: spacing.md,
   },
@@ -329,13 +427,33 @@ const styles = StyleSheet.create({
   headerText: {
     flex: 1,
   },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 2,
+  },
   label: {
     fontSize: typography.sizes.xs,
     fontWeight: typography.weights.medium,
     color: 'rgba(255,255,255,0.8)',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 2,
+  },
+  dateBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+    paddingVertical: 1,
+    paddingHorizontal: 6,
+    borderRadius: borderRadius.full,
+  },
+  dateText: {
+    fontSize: 9,
+    fontWeight: typography.weights.medium,
+    color: 'rgba(255,255,255,0.75)',
+    letterSpacing: 0.2,
   },
   title: {
     fontSize: typography.sizes.base,
@@ -359,6 +477,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
 
+  // Body
   body: {
     padding: spacing.md,
   },
@@ -389,6 +508,39 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
+
+  // Feedback
+  feedbackRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  feedbackChip: {
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.background.tertiary,
+    borderWidth: 1,
+    borderColor: colors.border.dark,
+  },
+  feedbackChipHelpfulActive: {
+    backgroundColor: colors.brand.primary,
+    borderColor: colors.brand.primary,
+  },
+  feedbackChipNotHelpfulActive: {
+    backgroundColor: colors.danger.main,
+    borderColor: colors.danger.main,
+  },
+  feedbackText: {
+    fontSize: typography.sizes.xs,
+    fontWeight: typography.weights.semibold,
+    color: colors.text.secondary,
+  },
+  feedbackTextActive: {
+    color: '#fff',
+  },
+
+  // Expanded content
   expandedContent: {
     marginTop: spacing.md,
     paddingTop: spacing.md,
@@ -409,10 +561,25 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     lineHeight: 20,
   },
+  expandedDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: spacing.md,
+    paddingTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border.dark,
+  },
+  expandedDateText: {
+    fontSize: typography.sizes.xs,
+    color: colors.text.tertiary,
+    fontStyle: 'italic',
+  },
   actionButton: {
     marginTop: spacing.sm,
   },
 
+  // Unread dot
   unreadDot: {
     position: 'absolute',
     top: spacing.md,
@@ -421,7 +588,22 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
   },
+  newBadge: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: borderRadius.full,
+  },
+  newBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: typography.weights.bold,
+    letterSpacing: 0.4,
+  },
 
+  // Compact card
   compactContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -441,10 +623,22 @@ const styles = StyleSheet.create({
   compactContent: {
     flex: 1,
   },
+  compactTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
   compactTitle: {
     fontSize: typography.sizes.sm,
     fontWeight: typography.weights.medium,
     color: colors.text.primary,
+    flex: 1,
+  },
+  compactDate: {
+    fontSize: 10,
+    color: colors.text.tertiary,
+    fontWeight: typography.weights.regular,
   },
   compactSummary: {
     fontSize: typography.sizes.xs,
@@ -463,3 +657,5 @@ const styles = StyleSheet.create({
     marginLeft: spacing.xs,
   },
 });
+
+

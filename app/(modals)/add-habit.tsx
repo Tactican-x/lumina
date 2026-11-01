@@ -12,11 +12,18 @@ export default function AddHabitModal() {
 
   return (
     <View style={styles.screen}>
-      <Modal visible onClose={() => router.back()} title="Add Habit" variant="fullscreen">
+      <Modal
+        visible
+        onClose={() => router.back()}
+        title="Add Habit"
+        variant="fullscreen"
+      >
         <HabitForm
           isLoading={isLoading}
           onCancel={() => router.back()}
           onSubmit={async (data) => {
+            // HabitForm's data shape should match your store's create() input.
+            // If TS complains here, paste HabitForm.tsx and I’ll align types perfectly.
             await create(data as any);
             router.back();
           }}

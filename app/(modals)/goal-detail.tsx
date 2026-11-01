@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 
 import { Modal } from '@/components/ui/Modal';
@@ -36,67 +36,92 @@ export default function GoalDetailModal() {
   return (
     <View style={styles.screen}>
       <Modal visible onClose={() => router.back()} title={goal.title}>
-        <Card variant="default" padding="md" style={{ marginBottom: spacing.md }}>
-          <Text style={styles.meta}>
-            {goal.category} • {goal.status}
-          </Text>
-          <Text style={styles.desc}>{goal.description || 'No description'}</Text>
-        </Card>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: spacing.xl }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Card variant="default" padding="md" style={{ marginBottom: spacing.md }}>
+            <Text style={styles.meta}>
+              {goal.category} • {goal.status}
+            </Text>
+            <Text style={styles.desc}>{goal.description || 'No description'}</Text>
+          </Card>
 
-        {goal.targetValue ? (
-          <View style={{ alignItems: 'center', marginBottom: spacing.lg }}>
-            <GoalProgressRing
-              currentValue={goal.currentValue}
-              targetValue={goal.targetValue}
-              unit={goal.unit}
-              color={goal.color}
-              size={150}
+          {goal.targetValue ? (
+            <View style={{ alignItems: 'center', marginBottom: spacing.lg }}>
+              <GoalProgressRing
+                currentValue={goal.currentValue}
+                targetValue={goal.targetValue}
+                unit={goal.unit}
+                color={goal.color}
+                size={150}
+              />
+            </View>
+          ) : null}
+
+          <Card variant="default" padding="md" style={{ marginBottom: spacing.md }}>
+            <Text style={styles.sectionTitle}>Update progress</Text>
+
+            <Input
+              label={`Current value ${goal.unit ? `(${goal.unit})` : ''}`}
+              value={value}
+              onChangeText={setValue}
+              keyboardType="numeric"
+              placeholder={`${goal.currentValue}`}
+            />
+
+            <Button
+              title="Save progress"
+              onPress={async () => {
+                if (parsedValue == null) return;
+                await updateProgress(parsedValue);
+                setValue('');
+              }}
+            />
+          </Card>
+
+          {milestones.length > 0 && (
+            <View style={{ marginBottom: spacing.md }}>
+              <Text style={styles.sectionTitle}>Milestones</Text>
+
+              {milestones.map((m) => (
+                <MilestoneItem
+                  key={m.id}
+                  milestone={m}
+                  goalColor={goal.color}
+                  onPress={() => {}}
+                />
+              ))}
+            </View>
+          )}
+
+          {/* Edit + Delete buttons */}
+          <View style={styles.actionRow}>
+            <Button
+              title="Edit Goal"
+              variant="secondary"
+              onPress={() =>
+                router.push({
+                  pathname: '/(modals)/edit-goal',
+                  params: { id: goal.id },
+                })
+              }
+              style={styles.actionButton}
+            />
+
+            <Button
+              title="Delete Goal"
+              variant="danger"
+              onPress={async () => {
+                await remove();
+                router.back();
+              }}
+              style={styles.actionButton}
             />
           </View>
-        ) : null}
-
-        <Card variant="default" padding="md" style={{ marginBottom: spacing.md }}>
-          <Text style={styles.sectionTitle}>Update progress</Text>
-          <Input
-            label={`Current value ${goal.unit ? `(${goal.unit})` : ''}`}
-            value={value}
-            onChangeText={setValue}
-            keyboardType="numeric"
-            placeholder={`${goal.currentValue}`}
-          />
-          <Button
-            title="Save progress"
-            onPress={async () => {
-              if (parsedValue == null) return;
-              await updateProgress(parsedValue);
-              setValue('');
-            }}
-          />
-        </Card>
-
-        {milestones.length > 0 && (
-          <View style={{ marginBottom: spacing.md }}>
-            <Text style={styles.sectionTitle}>Milestones</Text>
-            {milestones.map((m) => (
-              <MilestoneItem
-                key={m.id}
-                milestone={m}
-                goalColor={goal.color}
-                // toggle hook is available in store; repo auto-completes based on value
-                onPress={() => {}}
-              />
-            ))}
-          </View>
-        )}
-
-        <Button
-          title="Delete goal"
-          variant="danger"
-          onPress={async () => {
-            await remove();
-            router.back();
-          }}
-        />
+        </ScrollView>
       </Modal>
     </View>
   );
@@ -104,12 +129,24 @@ export default function GoalDetailModal() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background.primary },
-  meta: { color: colors.text.tertiary, marginBottom: spacing.sm, textTransform: 'capitalize' },
+  meta: {
+    color: colors.text.tertiary,
+    marginBottom: spacing.sm,
+    textTransform: 'capitalize',
+  },
   desc: { color: colors.text.secondary, lineHeight: 20 },
   sectionTitle: {
     fontSize: typography.sizes.base,
     fontWeight: typography.weights.semibold,
     color: colors.text.primary,
     marginBottom: spacing.sm,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.md,
+  },
+  actionButton: {
+    flex: 1,
   },
 });

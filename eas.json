@@ -1,8 +1,14 @@
 {
+  "cli": {
+    "appVersionSource": "local"
+  },
   "build": {
     "preview": {
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "env": {
+          "NPM_FLAGS": "--legacy-peer-deps"
+        }
       }
     },
     "production": {

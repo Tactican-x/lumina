@@ -32,8 +32,6 @@ interface ModalProps {
   variant?: ModalVariant;
   showCloseButton?: boolean;
   children: React.ReactNode;
-
-  /** If true, tapping the dark backdrop closes the modal */
   closeOnBackdropPress?: boolean;
 }
 
@@ -47,6 +45,10 @@ export function Modal({
   children,
 }: ModalProps) {
   const insets = useSafeAreaInsets();
+
+  // IMPORTANT: standalone Android builds often report insets.bottom as 0 even with nav bar present
+  const bottomInset =
+    Platform.OS === 'android' ? Math.max(insets.bottom, 24) : insets.bottom;
 
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(SCREEN_HEIGHT);
@@ -79,16 +81,15 @@ export function Modal({
 
   const headerStyle = [
     styles.header,
-    // In fullscreen, push header below status bar
     variant === 'fullscreen' && { paddingTop: spacing.md + insets.top },
   ];
 
   const bodyStyle = [
     styles.body,
-    // ✅ Critical: allow body to fill space so children (ScrollView, cards) render
     (variant === 'fullscreen' || variant === 'bottom-sheet') && { flex: 1 },
-    // In fullscreen, keep content above system gesture area
-    variant === 'fullscreen' && { paddingBottom: spacing.md + insets.bottom },
+    (variant === 'fullscreen' || variant === 'bottom-sheet') && {
+      paddingBottom: spacing.md + bottomInset,
+    },
   ];
 
   return (
@@ -103,12 +104,10 @@ export function Modal({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.container}
       >
-        {/* Backdrop */}
         <TouchableWithoutFeedback onPress={closeOnBackdropPress ? onClose : undefined}>
           <Animated.View style={[styles.backdrop, backdropStyle]} />
         </TouchableWithoutFeedback>
 
-        {/* Content */}
         <Animated.View
           style={[
             styles.content,
@@ -118,7 +117,6 @@ export function Modal({
             contentStyle,
           ]}
         >
-          {/* Header */}
           {(title || showCloseButton) && (
             <View style={headerStyle}>
               {variant === 'bottom-sheet' && <View style={styles.handle} />}
@@ -139,7 +137,6 @@ export function Modal({
             </View>
           )}
 
-          {/* Body */}
           <View style={bodyStyle}>{children}</View>
         </Animated.View>
       </KeyboardAvoidingView>
@@ -148,21 +145,11 @@ export function Modal({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-  },
+  container: { flex: 1, justifyContent: 'flex-end' },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0, 0, 0, 0.6)' },
 
-  content: {
-    backgroundColor: colors.background.secondary,
-    overflow: 'hidden',
-  },
+  content: { backgroundColor: colors.background.secondary, overflow: 'hidden' },
 
-  // ✅ IMPORTANT CHANGE: bottomSheet has a real height to prevent collapsed children
   bottomSheet: {
     borderTopLeftRadius: borderRadius['2xl'],
     borderTopRightRadius: borderRadius['2xl'],
@@ -179,11 +166,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.xl,
   },
 
-  fullscreen: {
-    flex: 1,
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
-  },
+  fullscreen: { flex: 1, borderTopLeftRadius: 0, borderTopRightRadius: 0 },
 
   header: {
     alignItems: 'center',
@@ -216,11 +199,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  closeButton: {
-    padding: spacing.xs,
-  },
+  closeButton: { padding: spacing.xs },
 
-  body: {
-    padding: spacing.md,
-  },
+  body: { padding: spacing.md },
 });

@@ -2,6 +2,10 @@
  * Date utility functions for Lumina
  */
 
+// ==========================================
+// CORE DATE KEY FUNCTIONS
+// ==========================================
+
 // Format date to YYYY-MM-DD string
 export function formatDateKey(date: Date): string {
   return date.toISOString().split('T')[0];
@@ -16,6 +20,10 @@ export function getTodayKey(): string {
 export function parseDateKey(key: string): Date {
   return new Date(key + 'T00:00:00');
 }
+
+// ==========================================
+// DISPLAY FORMATTING
+// ==========================================
 
 // Format date for display
 export function formatDisplayDate(date: Date): string {
@@ -51,10 +59,14 @@ export function formatRelativeTime(date: Date): string {
     return formatDisplayDate(date);
   } else if (abs(diffDays) >= 1) {
     const days = abs(diffDays);
-    return isFuture ? `in ${days} day${days > 1 ? 's' : ''}` : `${days} day${days > 1 ? 's' : ''} ago`;
+    return isFuture
+      ? `in ${days} day${days > 1 ? 's' : ''}`
+      : `${days} day${days > 1 ? 's' : ''} ago`;
   } else if (abs(diffHours) >= 1) {
     const hours = abs(diffHours);
-    return isFuture ? `in ${hours} hour${hours > 1 ? 's' : ''}` : `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    return isFuture
+      ? `in ${hours} hour${hours > 1 ? 's' : ''}`
+      : `${hours} hour${hours > 1 ? 's' : ''} ago`;
   } else if (abs(diffMinutes) >= 1) {
     const minutes = abs(diffMinutes);
     return isFuture ? `in ${minutes} min` : `${minutes} min ago`;
@@ -62,6 +74,137 @@ export function formatRelativeTime(date: Date): string {
     return 'just now';
   }
 }
+
+// ==========================================
+// INSIGHT DATE FORMATTING
+// ==========================================
+
+/**
+ * Format an insight's createdAt for display on cards.
+ * Shows contextual relative time for recent, absolute for older.
+ *
+ * Examples:
+ *   "Just now"
+ *   "5m ago"
+ *   "2h ago"
+ *   "Today, 9:41 AM"
+ *   "Yesterday, 3:12 PM"
+ *   "Mon, Jun 9"
+ *   "Jun 2, 2025"
+ */
+export function formatInsightDate(
+  createdAt: Date | string | number,
+  now?: Date
+): string {
+  const date =
+    createdAt instanceof Date ? createdAt : new Date(createdAt as any);
+
+  const current = now ?? new Date();
+  const diffMs = current.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  // Invalid date guard
+  if (isNaN(date.getTime())) return '';
+
+  // < 5 minutes
+  if (diffMins < 5) return 'Just now';
+
+  // < 1 hour
+  if (diffMins < 60) return `${diffMins}m ago`;
+
+  // < 6 hours
+  if (diffHours < 6) return `${diffHours}h ago`;
+
+  // Today
+  if (isSameDay(date, current)) {
+    return `Today, ${formatDisplayTime(date)}`;
+  }
+
+  // Yesterday
+  const yesterday = new Date(current);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (isSameDay(date, yesterday)) {
+    return `Yesterday, ${formatDisplayTime(date)}`;
+  }
+
+  // This week (< 7 days)
+  if (diffDays < 7) {
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+    const monthDay = date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+    return `${dayName}, ${monthDay}`;
+  }
+
+  // Same year
+  if (date.getFullYear() === current.getFullYear()) {
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+    });
+  }
+
+  // Different year
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+/**
+ * Get a very short date label for compact UI elements.
+ *
+ * Examples:
+ *   "Now"
+ *   "5m"
+ *   "2h"
+ *   "Today"
+ *   "Yesterday"
+ *   "Mon"
+ *   "Jun 9"
+ */
+export function formatInsightDateShort(
+  createdAt: Date | string | number,
+  now?: Date
+): string {
+  const date =
+    createdAt instanceof Date ? createdAt : new Date(createdAt as any);
+
+  const current = now ?? new Date();
+  const diffMs = current.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (isNaN(date.getTime())) return '';
+
+  if (diffMins < 5) return 'Now';
+  if (diffMins < 60) return `${diffMins}m`;
+  if (diffHours < 6) return `${diffHours}h`;
+
+  if (isSameDay(date, current)) return 'Today';
+
+  const yesterday = new Date(current);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (isSameDay(date, yesterday)) return 'Yesterday';
+
+  if (diffDays < 7) {
+    return date.toLocaleDateString('en-US', { weekday: 'short' });
+  }
+
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+// ==========================================
+// DATE CHECKS
+// ==========================================
 
 // Check if date is today
 export function isToday(date: Date): boolean {
@@ -74,6 +217,19 @@ export function isYesterday(date: Date): boolean {
   yesterday.setDate(yesterday.getDate() - 1);
   return formatDateKey(date) === formatDateKey(yesterday);
 }
+
+// Check if two dates are the same day
+export function isSameDay(date1: Date, date2: Date): boolean {
+  return (
+    date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
+  );
+}
+
+// ==========================================
+// DATE BOUNDARIES
+// ==========================================
 
 // Get start of day
 export function startOfDay(date: Date): Date {
@@ -105,16 +261,20 @@ export function endOfWeek(date: Date): Date {
   return endOfDay(result);
 }
 
+// ==========================================
+// DATE RANGES & ARRAYS
+// ==========================================
+
 // Get array of dates between two dates
 export function getDateRange(start: Date, end: Date): Date[] {
   const dates: Date[] = [];
   const current = new Date(start);
-  
+
   while (current <= end) {
     dates.push(new Date(current));
     current.setDate(current.getDate() + 1);
   }
-  
+
   return dates;
 }
 
@@ -129,6 +289,10 @@ export function getLastNDays(n: number): Date[] {
   return dates;
 }
 
+// ==========================================
+// DATE MATH
+// ==========================================
+
 // Get days until date
 export function daysUntil(date: Date): number {
   const now = startOfDay(new Date());
@@ -142,10 +306,9 @@ export function daysSince(date: Date): number {
   return -daysUntil(date);
 }
 
-// Check if two dates are the same day
-export function isSameDay(date1: Date, date2: Date): boolean {
-  return formatDateKey(date1) === formatDateKey(date2);
-}
+// ==========================================
+// CURRENT TIME HELPERS
+// ==========================================
 
 // Get current hour (0-23)
 export function getCurrentHour(): number {
@@ -157,6 +320,13 @@ export function getCurrentDayOfWeek(): number {
   return new Date().getDay();
 }
 
+// Check if current time is weekend
+export function isWeekend(date?: Date): boolean {
+  const d = date ?? new Date();
+  const day = d.getDay();
+  return day === 0 || day === 6;
+}
+
 // Get greeting based on time of day
 export function getTimeOfDayGreeting(): string {
   const hour = getCurrentHour();
@@ -165,6 +335,10 @@ export function getTimeOfDayGreeting(): string {
   if (hour < 21) return 'Good evening';
   return 'Good night';
 }
+
+// ==========================================
+// DURATION & TIME FORMATTING
+// ==========================================
 
 // Format duration in minutes to readable string
 export function formatDuration(minutes: number): string {
